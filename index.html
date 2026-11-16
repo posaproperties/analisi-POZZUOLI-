@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisi Mercato Turistico - Pozzuoli (NA) 2024</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container { position: relative; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; height: 350px; max-height: 400px; }
+        @media (min-width: 768px) { .chart-container { height: 400px; } }
+        .nav-active { background-color: #e0f2fe; color: #0284c7; font-weight: 600; }
+        .sidebar { transition: transform 0.3s ease-in-out; }
+        @media (max-width: 1023px) { .sidebar { transform: translateX(-100%); } .sidebar.open { transform: translateX(0); } }
+    </style>
+    <!-- Chosen Palette: Coastal Calm (BG: gray-50, Text: gray-800, Accent: sky-600, Cards: white) -->
+    <!-- Application Structure Plan: L'app è strutturata come un cruscotto interattivo con navigazione laterale (a scomparsa su mobile). Le sezioni sono: 'Cruscotto' (KPI principali e stagionalità), 'Analisi di Mercato' (flussi, provenienza, offerta e paradosso immobiliare/bradisismo), 'Analisi Competitiva' (prezzi e occupazione interattivi per tipologia, simulatore e SWOT), 'Domanda e Trend' (driver, canali OTA e tabella calendario date opportunità), 'Strategia' (confronto tra subaffitto, property management e acquisto, target, normativa) e 'Piano d'Azione' (5 mosse chiave). Questa struttura a schede tematiche è stata scelta per permettere all'investitore di navigare rapidamente tra i diversi livelli di analisi (dal macro al micro) e di interagire con i dati, rendendo l'esplorazione più efficiente e mirata rispetto a un report lineare. -->
+    <!-- Visualization & Content Choices: - KPI (Cruscotto): Goal: Informare. Method: Cards HTML/Tailwind. Interaction: None. Justification: Overview rapido. - Stagionalità (Cruscotto): Goal: Mostrare trend. Method: Line Chart (Chart.js). Interaction: Hover + selettore trimestrale. Justification: Immediata visualizzazione picchi/valli. - Provenienza Turisti (Mercato): Goal: Proporzioni. Method: Doughnut Chart (Chart.js). Interaction: Hover. Justification: Chiara divisione Italia/Estero. - Offerta Ricettiva & OMI (Mercato): Goal: Confrontare. Method: Bar Chart (Chart.js). Interaction: Toggle Vendita/Affitto OMI. Justification: Mostra quota extra-alberghiero e impatto del bradisismo. - Prezzi & Occupazione (Competitiva): Goal: Confrontare/Analizzare. Method: 2 Bar Charts (Chart.js). Interaction: Dropdown select ('propertyTypeSelector') che aggiorna dinamicamente i grafici e le proiezioni finanziarie. Justification: Consente all'investitore di analizzare redditività e pressione competitiva per la tipologia di immobile specifica di suo interesse. - SWOT, Driver, Strategia, Piano d'Azione: Goal: Organizzare/Informare. Method: Liste e card HTML/Tailwind. Interaction: Checklist interattiva nel Piano d'Azione. Justification: Contenuti testuali e strategici resi chiari e leggibili. - Calendario (Domanda): Goal: Informare. Method: Tabella HTML/Tailwind filtrabile. Interaction: Filtri categoria. Justification: Fornisce date azionabili. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
+
+    <div id="sidebarOverlay" class="fixed inset-0 bg-gray-900/40 z-30 hidden lg:hidden"></div>
+
+    <aside id="sidebar" class="sidebar fixed top-0 left-0 z-40 w-64 h-screen bg-white border-r border-gray-200 flex flex-col justify-between">
+        <div>
+            <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <span class="w-9 h-9 rounded-lg bg-sky-600 text-white font-bold flex items-center justify-center text-lg">P</span>
+                    <div>
+                        <h1 class="font-bold text-gray-900 text-base leading-tight">Pozzuoli STR</h1>
+                        <p class="text-xs text-gray-500">Market Report 2024</p>
+                    </div>
+                </div>
+                <button id="closeSidebarBtn" class="lg:hidden text-gray-500 hover:text-gray-800 text-xl font-bold px-2">&times;</button>
+            </div>
+
+            <nav class="p-4 space-y-1.5" id="mainNav">
+                <button data-section="cruscotto" class="nav-btn nav-active w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm text-left transition-colors">
+                    <span class="text-base">&#9632;</span>
+                    <span>Cruscotto</span>
+                </button>
+                <button data-section="mercato" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 text-left transition-colors">
+                    <span class="text-base">&#9673;</span>
+                    <span>Analisi di Mercato</span>
+                </button>
+                <button data-section="competitiva" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 text-left transition-colors">
+                    <span class="text-base">&#9650;</span>
+                    <span>Analisi Competitiva</span>
+                </button>
+                <button data-section="domanda" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 text-left transition-colors">
+                    <span class="text-base">&#9733;</span>
+                    <span>Domanda e Trend</span>
+                </button>
+                <button data-section="strategia" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 text-left transition-colors">
+                    <span class="text-base">&#9830;</span>
+                    <span>Strategia</span>
+                </button>
+                <button data-section="piano" class="nav-btn w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 text-left transition-colors">
+                    <span class="text-base">&#10003;</span>
+                    <span>Piano d'Azione</span>
+                </button>
+            </nav>
+        </div>
+
+        <div class="p-4 border-t border-gray-100">
+            <div class="bg-sky-50 rounded-lg p-3.5 border border-sky-100">
+                <span class="text-xs font-semibold text-sky-800 block">Focus Investitore</span>
+                <p class="text-xs text-sky-700 mt-1 leading-relaxed">
+                    Dati consuntivi 2024 &amp; proiezioni operative per affitti brevi a Pozzuoli (NA).
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    <div class="lg:pl-64 min-h-screen flex flex-col">
+        <header class="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-gray-200 px-4 sm:px-8 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <button id="openSidebarBtn" class="lg:hidden px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-100">
+                    &#9776; Menu
+                </button>
+                <div>
+                    <h2 id="headerTitle" class="text-lg sm:text-xl font-bold text-gray-900">Cruscotto Esecutivo: Pozzuoli (NA)</h2>
+                    <p class="text-xs text-gray-500 hidden sm:block">Analisi del mercato turistico-ricettivo e immobiliare per investitori Short-Term Rental (Anno 2024)</p>
+                </div>
+            </div>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-sky-100 text-sky-800">
+                Report 2024
+            </span>
+        </header>
+
+        <main class="flex-1 p-4 sm:p-8 max-w-7xl w-full mx-auto space-y-8">
+
+            <!-- SEZIONE 1: CRUSCOTTO -->
+            <section id="sec-cruscotto" class="tab-section space-y-6">
+                <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <h3 class="text-base font-semibold text-gray-900">Sintesi Esecutiva: Il Paradosso Flegreo</h3>
+                    <p class="text-sm text-gray-600 mt-1.5 leading-relaxed">
+                        Questa sezione offre una panoramica immediata dei principali indicatori turistici e immobiliari di Pozzuoli nell'anno 2024. Il territorio vive una doppia dinamica: da un lato il <strong>record storico delle presenze turistiche</strong> (trainato da archeologia, terme e imbarchi per le isole), dall'altro gli effetti degli sciami bradisismici che hanno spinto i canoni residenziali a <strong>+10,32%</strong> comprimendo i margini del subaffitto, ma creando opportunità di sconto (10–20%) sull'acquisto e forte domanda di <strong>Property Management</strong>.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-semibold uppercase text-gray-500">Presenze Campania 2024</span>
+                            <span class="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">+4,9% YoY</span>
+                        </div>
+                        <div class="text-2xl font-bold text-gray-900 mt-2">21,37 Mln</div>
+                        <p class="text-xs text-gray-500 mt-1">Oltre 250.000 ingressi nei siti flegrei e Rione Terra; 54% domanda estera.</p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-semibold uppercase text-gray-500">Tariffa Media (ADR)</span>
+                            <span class="text-xs font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded">Top: 192 €</span>
+                        </div>
+                        <div class="text-2xl font-bold text-sky-600 mt-2">101 € – 125 €</div>
+                        <p class="text-xs text-gray-500 mt-1">Ricavo lordo annuo Top Performer: 19.010 € contro 9.027 € media mercato.</p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-semibold uppercase text-gray-500">Canone Locazione OMI</span>
+                            <span class="text-xs font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded">+10,32% YoY</span>
+                        </div>
+                        <div class="text-2xl font-bold text-gray-900 mt-2">11,76 €/m²</div>
+                        <p class="text-xs text-gray-500 mt-1">Punte di 14,77 €/m² a Lucrino per domanda sfollati: subaffitto penalizzato.</p>
+                    </div>
+
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-semibold uppercase text-gray-500">Modello Consigliato</span>
+                            <span class="text-xs font-semibold text-sky-700 bg-sky-50 px-2 py-0.5 rounded">Fee 20–30%</span>
+                        </div>
+                        <div class="text-2xl font-bold text-sky-600 mt-2">Property Mgmt</div>
+                        <p class="text-xs text-gray-500 mt-1">Gestione seconde case sfitte a rischio zero + Buy-to-Let con bonus D.L. 140/23.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900">Andamento Mensile dei Flussi &amp; Stagionalità 2024</h3>
+                            <p class="text-xs text-gray-500">Indice di occupazione stimata (%) e variazione tariffaria media nel corso dell'anno</p>
+                        </div>
+                        <span class="text-xs font-medium bg-gray-100 text-gray-700 px-3 py-1 rounded-md">Permanenza media: 2,7 – 3,5 notti</span>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="seasonalityLineChart"></canvas>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-4 border-t border-gray-100 text-xs">
+                        <div class="p-3 rounded-lg bg-gray-50 border border-gray-200">
+                            <span class="font-bold text-sky-700 block">Q1: Gen – Mar (16,5%)</span>
+                            <span class="text-gray-600 mt-1 block">Bassa stagione mitigata da Terme Stufe di Nerone e affitti transitori (1–4 mesi).</span>
+                        </div>
+                        <div class="p-3 rounded-lg bg-gray-50 border border-gray-200">
+                            <span class="font-bold text-sky-700 block">Q2: Apr – Giu (26,5%)</span>
+                            <span class="text-gray-600 mt-1 block">Forte ripresa grazie al turismo archeologico estero, ponti primaverili e Pozzuoli Jazz.</span>
+                        </div>
+                        <div class="p-3 rounded-lg bg-sky-50 border border-sky-200">
+                            <span class="font-bold text-sky-800 block">Q3: Lug – Set (40,0%)</span>
+                            <span class="text-gray-700 mt-1 block">Picco massimo: hub traghetti Ischia/Procida, Pennone a Mare (15 Ago) e Festival Malazè.</span>
+                        </div>
+                        <div class="p-3 rounded-lg bg-gray-50 border border-gray-200">
+                            <span class="font-bold text-sky-700 block">Q4: Ott – Dic (17,0%)</span>
+                            <span class="text-gray-600 mt-1 block">Weekend enogastronomici (Falanghina/Piedirosso), terme notturne e mercatini Rione Terra.</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SEZIONE 2: ANALISI DI MERCATO -->
+            <section id="sec-mercato" class="tab-section hidden space-y-6">
+                <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <h3 class="text-base font-semibold text-gray-900">Flussi Turistici, Offerta Ricettiva e Valori Immobiliari OMI</h3>
+                    <p class="text-sm text-gray-600 mt-1.5 leading-relaxed">
+                        In questa sezione analizziamo la provenienza geografica dei viaggiatori (con il sorpasso dei mercati internazionali nel 2024), la composizione dell'offerta ricettiva tra comparto extra-alberghiero e alberghiero, e la mappatura dei valori immobiliari OMI per quartiere per valutare la sostenibilità economica dell'investimento.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900">Provenienza dei Turisti (2024)</h3>
+                            <p class="text-xs text-gray-500 mb-4">Ripartizione percentuale tra mercati esteri (+8,9% YoY) e mercato domestico</p>
+                            <div class="chart-container" style="height: 300px;">
+                                <canvas id="originDoughnutChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100 space-y-2 text-xs text-gray-600">
+                            <p><strong class="text-gray-900">Principali Mercati Stranieri (54%):</strong> Stati Uniti, Regno Unito, Germania e Francia. Scelgono Pozzuoli come base culturale e vulcanologica meno caotica rispetto al centro di Napoli.</p>
+                            <p><strong class="text-gray-900">Principali Mercati Italiani (46%):</strong> Lombardia, Lazio, Emilia-Romagna e turismo regionale di prossimità per weekend termali ed enogastronomici.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900">Struttura dell'Offerta Ricettiva</h3>
+                            <p class="text-xs text-gray-500 mb-4">Confronto incidenza strutture extra-alberghiere vs alberghiere nel bacino flegreo</p>
+                            <div class="chart-container" style="height: 300px;">
+                                <canvas id="supplyBarChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100 space-y-2 text-xs text-gray-600">
+                            <p><strong class="text-gray-900">Extra-Alberghiero (83,5% delle strutture):</strong> Prevalenza di Case Vacanza (interi appartamenti), B&amp;B e Affittacamere concentrati tra Centro Storico, Porto, Rione Terra e Lungomare Pertini.</p>
+                            <p><strong class="text-gray-900">Alberghiero &amp; Open-Air (16,5%):</strong> Hotel 3-4 stelle (spesso orientati a business/cerimonie) e campeggi/villaggi sul litorale di Licola/Lucrino. Scarsa presenza di hotel boutique di lusso.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900">Quotazioni Immobiliari OMI per Quartiere (Acquisto vs Locazione)</h3>
+                            <p class="text-xs text-gray-500">Impatto del bradisismo: prezzi di vendita negoziabili (-10/20%) vs canoni di affitto in forte rialzo (+10,32%)</p>
+                        </div>
+                        <div class="inline-flex rounded-lg bg-gray-100 p-1">
+                            <button id="btnOmiSale" class="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-sky-600 shadow-sm">Vendita (€/m²)</button>
+                            <button id="btnOmiRent" class="px-3 py-1.5 rounded-md text-xs font-semibold text-gray-600 hover:text-gray-900">Affitto (€/m²/mese)</button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="omiZoneBarChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SEZIONE 3: ANALISI COMPETITIVA -->
+            <section id="sec-competitiva" class="tab-section hidden space-y-6">
+                <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div class="max-w-2xl">
+                        <h3 class="text-base font-semibold text-gray-900">Benchmark Prezzi, Occupazione e Analisi SWOT</h3>
+                        <p class="text-sm text-gray-600 mt-1 leading-relaxed">
+                            Seleziona la tipologia di immobile di tuo interesse dal menu a tendina per aggiornare dinamicamente i grafici di tariffa media giornaliera (ADR), tasso di occupazione e ricavo lordo stimato tra gestione amatoriale e professionale.
+                        </p>
+                    </div>
+                    <div class="shrink-0">
+                        <label for="propertyTypeSelector" class="block text-xs font-semibold text-gray-500 uppercase mb-1">Filtra Tipologia Immobile</label>
+                        <select id="propertyTypeSelector" class="w-full md:w-72 rounded-lg border border-gray-300 bg-gray-50 px-3.5 py-2.5 text-sm font-semibold text-gray-800 focus:border-sky-600 focus:outline-none">
+                            <option value="all">Tutte le Tipologie (Confronto Completo)</option>
+                            <option value="affittacamere">Affittacamere / Monolocale</option>
+                            <option value="bilocale">Bilocale (Centro / Porto / Lungomare)</option>
+                            <option value="trilocale">Trilocale (Vista Mare / Anfiteatro)</option>
+                            <option value="quadrilocale">Quadrilocale &amp; Villa (Lucrino / Arco Felice)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Dynamic Summary Strip -->
+                <div id="compSummaryCards" class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <h3 class="text-base font-bold text-gray-900">Prezzo Medio per Notte (ADR Inverno vs Estate)</h3>
+                        <p class="text-xs text-gray-500 mb-4">Tariffe medie in € per notte per singola tipologia ricettiva</p>
+                        <div class="chart-container" style="height: 320px;">
+                            <canvas id="compAdrChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <h3 class="text-base font-bold text-gray-900">Livello Medio di Occupazione Stimata (%)</h3>
+                        <p class="text-xs text-gray-500 mb-4">Confronto occupazione media di mercato vs Top Performer (gestione dinamica)</p>
+                        <div class="chart-container" style="height: 320px;">
+                            <canvas id="compOccChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SWOT Matrix -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-3">
+                        <span class="inline-block px-2.5 py-1 rounded text-xs font-bold bg-emerald-100 text-emerald-800">Punti di Forza &amp; Opportunità Competitor</span>
+                        <ul class="space-y-2 text-sm text-gray-700 list-disc list-inside">
+                            <li><strong>Posizione strategica:</strong> Collegamento diretto con Napoli centro (Cumana/Metro Linea 2 in 30 min) e imbarco rapido per Procida e Ischia.</li>
+                            <li><strong>Asset culturali ed enogastronomici:</strong> Rione Terra, Anfiteatro Flavio, Terme Stufe di Nerone e ristorazione ittica di alto livello.</li>
+                            <li><strong>Vuoto nell'offerta di qualità:</strong> Pochissimi boutique hotel; un appartamento ristrutturato con domotica cattura subito la fascia alta.</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-3">
+                        <span class="inline-block px-2.5 py-1 rounded text-xs font-bold bg-rose-100 text-rose-800">Debolezze Competitor &amp; Minacce di Mercato</span>
+                        <ul class="space-y-2 text-sm text-gray-700 list-disc list-inside">
+                            <li><strong>Gestione amatoriale diffusa:</strong> Arredi datati, foto non professionali, pricing statico e assenza di self check-in automatizzato.</li>
+                            <li><strong>Criticità parcheggi:</strong> Forte carenza di posti auto in Centro Storico, Porto e Rione Terra (chi offre posto auto ha un vantaggio decisivo).</li>
+                            <li><strong>Percezione del bradisismo:</strong> I competitor non comunicano protocolli di sicurezza, causando cancellazioni evitabili tra i turisti esteri.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SEZIONE 4: DOMANDA E TREND -->
+            <section id="sec-domanda" class="tab-section hidden space-y-6">
+                <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <h3 class="text-base font-semibold text-gray-900">Motivazioni di Viaggio, Canali OTA, Recensioni e Calendario Opportunità</h3>
+                    <p class="text-sm text-gray-600 mt-1.5 leading-relaxed">
+                        Comprendere cosa spinge il turista a scegliere Pozzuoli permette di ottimizzare posizionamento e tariffe. Di seguito sono analizzati i driver principali, i canali di prenotazione più performanti, il sentiment delle recensioni e il calendario dettagliato delle date ad alta redditività per il prossimo anno.
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-3">
+                        <h4 class="font-bold text-gray-900 text-sm uppercase tracking-wide text-sky-700">1. Motivazioni &amp; Trend Emergenti</h4>
+                        <ul class="space-y-2.5 text-xs text-gray-600 leading-relaxed">
+                            <li><strong class="text-gray-900">Cultura &amp; Archeologia (35%):</strong> Parco Archeologico Campi Flegrei, Baia Sommersa e percorso sotterraneo del Rione Terra.</li>
+                            <li><strong class="text-gray-900">Mare &amp; Transito Isole (30%):</strong> Imbarco traghetti verso Procida/Ischia e balneazione tra Lucrino e Miseno.</li>
+                            <li><strong class="text-gray-900">Wellness &amp; Enogastronomia (20%):</strong> Terme Stufe di Nerone (destagionalizzante) e tour vitivinicoli (Falanghina).</li>
+                            <li><strong class="text-gray-900">Smart Working &amp; Mid-Term (15%):</strong> Crescita di nomad digitali e trasfertisti nei mesi autunnali/invernali (1–4 mesi).</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-3">
+                        <h4 class="font-bold text-gray-900 text-sm uppercase tracking-wide text-sky-700">2. Canali di Prenotazione (OTA)</h4>
+                        <ul class="space-y-2.5 text-xs text-gray-600 leading-relaxed">
+                            <li><strong class="text-gray-900">Airbnb &amp; Vrbo (52%):</strong> Canale primario per turisti internazionali (USA/UK/UE), famiglie e soggiorni superiori a 3 notti.</li>
+                            <li><strong class="text-gray-900">Booking.com (36%):</strong> Leader per soggiorni brevi (1–2 notti), clientela italiana e viaggiatori last-minute verso i traghetti.</li>
+                            <li><strong class="text-gray-900">Prenotazioni Dirette &amp; Portali Transitori (12%):</strong> Sito web proprietario per clienti repeat e Idealista/Spotahome per contratti transitori invernali.</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-3">
+                        <h4 class="font-bold text-gray-900 text-sm uppercase tracking-wide text-sky-700">3. Analisi Recensioni (Media 7,8/10)</h4>
+                        <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-100 text-xs text-emerald-900">
+                            <strong>Punti più apprezzati:</strong> Vista panoramica sul golfo, ospitalità calorosa, vicinanza ai ristoranti del porto e ai mezzi pubblici.
+                        </div>
+                        <div class="p-3 rounded-lg bg-rose-50 border border-rose-100 text-xs text-rose-900">
+                            <strong>Criticità ricorrenti:</strong> Difficoltà di parcheggio, rumore notturno nei vicoli del centro, Wi-Fi lento e check-in rigidi senza smart-lock.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendario Opportunità Table -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <h3 class="text-base font-bold text-gray-900">Calendario Date Opportunità &amp; Picchi Tariffari (Prossimo Anno)</h3>
+                            <p class="text-xs text-gray-500">Finestre temporali precise in cui applicare strategie di Dynamic Pricing (+30% / +60%)</p>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5" id="calendarFilterGroup">
+                            <button data-filter="all" class="cal-filter-btn px-3 py-1 rounded-md text-xs font-semibold bg-sky-600 text-white">Tutte</button>
+                            <button data-filter="picco" class="cal-filter-btn px-3 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">Alta Stagione</button>
+                            <button data-filter="cultura" class="cal-filter-btn px-3 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">Eventi &amp; Cultura</button>
+                            <button data-filter="inverno" class="cal-filter-btn px-3 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200">Bassa Stagione</button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-gray-50 border-b border-gray-200 text-xs font-semibold uppercase text-gray-500">
+                                    <th class="py-3.5 px-6">Periodo / Date Esatte</th>
+                                    <th class="py-3.5 px-6">Evento / Driver di Domanda</th>
+                                    <th class="py-3.5 px-6">Target Prevalente</th>
+                                    <th class="py-3.5 px-6">Azione Tariffaria Consigliata</th>
+                                </tr>
+                            </thead>
+                            <tbody id="calendarTableBody" class="divide-y divide-gray-100 text-xs sm:text-sm">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SEZIONE 5: STRATEGIA -->
+            <section id="sec-strategia" class="tab-section hidden space-y-6">
+                <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+                    <h3 class="text-base font-semibold text-gray-900">Analisi Strategica Finale dal Punto di Vista dell'Investitore</h3>
+                    <p class="text-sm text-gray-600 mt-1.5 leading-relaxed">
+                        Valutazione comparativa dei tre modelli d'ingresso nel mercato di Pozzuoli (Subaffitto, Property Management e Acquisto per messa a reddito), identificazione del target più profittevole, degli immobili su cui puntare, dei fattori differenzianti e dei canali di acquisizione clienti.
+                    </p>
+                </div>
+
+                <!-- 3 Modelli di Investimento -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-bold uppercase tracking-wider text-rose-700 bg-rose-50 px-2.5 py-1 rounded">Sconsigliato nel 2024/25</span>
+                                <span class="text-xs text-gray-400">Opzione A</span>
+                            </div>
+                            <h4 class="text-lg font-bold text-gray-900">Affitto e Subaffitto (Rent-to-Rent)</h4>
+                            <p class="text-xs text-gray-600 mt-2 leading-relaxed">
+                                L'aumento del <strong>+10,32%</strong> dei canoni residenziali (fino a 14,77 €/m² a Lucrino) causato dalla domanda abitativa legata al bradisismo erode il margine operativo lordo. Inoltre, i proprietari locano facilmente a famiglie locali senza concedere clausole di sublocazione turistica.
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-gray-100 text-xs font-semibold text-rose-700">
+                            Rating Investitore: Basso (Margine compresso)
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border-2 border-sky-600 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-bold uppercase tracking-wider text-white bg-sky-600 px-2.5 py-1 rounded">Strategia Primaria Consigliata</span>
+                                <span class="text-xs text-sky-600 font-semibold">Opzione B</span>
+                            </div>
+                            <h4 class="text-lg font-bold text-gray-900">Property Management (Conto Terzi)</h4>
+                            <p class="text-xs text-gray-600 mt-2 leading-relaxed">
+                                Modello a <strong>zero rischio di capitale</strong> con fee del <strong>20%–30%</strong> sul transato. Molti proprietari di seconde case a Pozzuoli, frenati dal vendere in un mercato rallentato dal bradisismo, preferiscono affidare l'immobile a un gestore professionale che garantisca manutenzione costante e rendita.
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-gray-100 text-xs font-semibold text-sky-700">
+                            Rating Investitore: Ottimo (Scalabilità rapida)
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded">Opportunità Patrimoniale</span>
+                                <span class="text-xs text-gray-400">Opzione C</span>
+                            </div>
+                            <h4 class="text-lg font-bold text-gray-900">Acquisto e Messa a Reddito (Buy-to-Let)</h4>
+                            <p class="text-xs text-gray-600 mt-2 leading-relaxed">
+                                La bassa liquidità delle compravendite consente di negoziare <strong>sconti del 10%–20%</strong> rispetto ai valori OMI su immobili strutturalmente integri, accedendo anche ai contributi a fondo perduto del <strong>D.L. 140/2023</strong> (fino a 30.000 € per ripristino/adeguamento).
+                            </p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-gray-100 text-xs font-semibold text-emerald-700">
+                            Rating Investitore: Alto (Se acquistato a sconto)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Target, Immobili, Differenziazione, Acquisizione -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-3">
+                        <h4 class="font-bold text-gray-900 text-base">Target Più Profittevole &amp; Immobili Ideali</h4>
+                        <p class="text-xs text-gray-600 leading-relaxed">
+                            <strong class="text-gray-900">Target Primario:</strong> Coppie e piccoli gruppi internazionali (USA, UK, Germania, Francia) e viaggiatori alto-spendenti del Nord Italia interessati al binomio <em>Cultura/Archeologia + Terme/Enogastronomia</em> (soggiorni 2–5 notti). Target secondario invernale: trasfertisti e smart worker (1–4 mesi).
+                        </p>
+                        <p class="text-xs text-gray-600 leading-relaxed">
+                            <strong class="text-gray-900">Tipologie Immobiliari Migliori:</strong><br>
+                            1. <strong>Bilocali (50–65 mq)</strong> tra Centro Storico, Porto e Anfiteatro Flavio per massimizzare l'occupazione annuale.<br>
+                            2. <strong>Trilocali vista mare o Ville</strong> ad Arco Felice / Lucrino dotati di <strong>parcheggio privato</strong> e spazio esterno per catturare l'ADR estivo più elevato (&gt;190 €/notte).
+                        </p>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-3">
+                        <h4 class="font-bold text-gray-900 text-base">Punti Differenzianti &amp; Canali di Acquisizione</h4>
+                        <p class="text-xs text-gray-600 leading-relaxed">
+                            <strong class="text-gray-900">Come battere i competitor:</strong> Self check-in h24 con serratura smart, Wi-Fi fibra dedicato allo smart working, insonorizzazione infissi, protocollo informativo chiaro e rassicurante sul bradisismo, e convenzioni dirette con le <em>Terme Stufe di Nerone</em> e tour operator locali.
+                        </p>
+                        <p class="text-xs text-gray-600 leading-relaxed">
+                            <strong class="text-gray-900">Canali di Acquisizione Clienti:</strong> Ottimizzazione SEO su Airbnb (badge "Amato dagli ospiti") e Booking.com, partnership con agenzie di escursioni flegree (es. <em>Campi Flegrei Active</em>), rete di driver/transfer da Aeroporto Capodichino e portali mid-term per i mesi invernali.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Normativa Box -->
+                <div class="bg-sky-50 border border-sky-200 rounded-xl p-5 text-xs text-sky-900 space-y-1.5">
+                    <span class="font-bold uppercase tracking-wider block">Adempimenti Normativi &amp; Fiscali Obbligatori (Pozzuoli / Campania)</span>
+                    <p>
+                        • <strong>Imposta di Soggiorno (Delibera n.6/2024):</strong> 5,00 € a notte per persona (esenti residenti e minori di 10 anni).<br>
+                        • <strong>Codici Identificativi:</strong> Esposizione obbligatoria di <strong>CUSR</strong> (Regione Campania) e <strong>CIN</strong> (Ministero del Turismo) su tutti gli annunci online.<br>
+                        • <strong>Soglia Imprenditoriale:</strong> Oltre 4 immobili destinati a locazione breve (o gestione professionale conto terzi) scatta l'obbligo di SCIA al SUAP del Comune di Pozzuoli e Partita IVA.
+                    </p>
+                </div>
+            </section>
+
+            <!-- SEZIONE 6: PIANO D'AZIONE -->
+            <section id="sec-piano" class="tab-section hidden space-y-6">
+                <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                    <div class="max-w-2xl">
+                        <h3 class="text-base font-semibold text-gray-900">Piano d'Azione Pratico: Le 5 Mosse Chiave per Entrare nel Mercato</h3>
+                        <p class="text-sm text-gray-600 mt-1 leading-relaxed">
+                            Roadmap operativa sequenziale per avviare l'investimento a Pozzuoli, mitigare il rischio sismico e massimizzare la redditività fin dal primo anno. Spunta le fasi completate per monitorare il tuo piano.
+                        </p>
+                    </div>
+                    <div class="bg-sky-50 border border-sky-200 px-4 py-2.5 rounded-lg text-right">
+                        <span class="text-xs text-sky-700 font-semibold block">Avanzamento Piano</span>
+                        <span id="actionProgressText" class="text-lg font-bold text-sky-800">0 / 5 Completate</span>
+                    </div>
+                </div>
+
+                <div id="actionStepsContainer" class="space-y-4">
+                    <!-- Populated via JS -->
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        function wrapLabel(str, maxLen = 16) {
+            if (str.length <= maxLen) return str;
+            const words = str.split(' ');
+            const lines = [];
+            let currentLine = '';
+            words.forEach(word => {
+                if ((currentLine + ' ' + word).trim().length <= maxLen) {
+                    currentLine = (currentLine + ' ' + word).trim();
+                } else {
+                    if (currentLine) lines.push(currentLine);
+                    currentLine = word;
+                }
+            });
+            if (currentLine) lines.push(currentLine);
+            return lines;
+        }
+
+        // Sidebar & Tab Navigation
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        const openBtn = document.getElementById('openSidebarBtn');
+        const closeBtn = document.getElementById('closeSidebarBtn');
+        const navBtns = document.querySelectorAll('.nav-btn');
+        const sections = document.querySelectorAll('.tab-section');
+        const headerTitle = document.getElementById('headerTitle');
+
+        const sectionTitles = {
+            cruscotto: 'Cruscotto Esecutivo: Pozzuoli (NA)',
+            mercato: 'Analisi di Mercato: Flussi, Offerta & Valori OMI',
+            competitiva: 'Analisi Competitiva: Tariffe, Occupazione & SWOT',
+            domanda: 'Domanda, Trend & Calendario Opportunità',
+            strategia: 'Strategia d\'Investimento & Posizionamento',
+            piano: 'Piano d\'Azione Operativo in 5 Mosse'
+        };
+
+        function openSidebar() {
+            sidebar.classList.add('open');
+            overlay.classList.remove('hidden');
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            overlay.classList.add('hidden');
+        }
+
+        openBtn.addEventListener('click', openSidebar);
+        closeBtn.addEventListener('click', closeSidebar);
+        overlay.addEventListener('click', closeSidebar);
+
+        navBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.dataset.section;
+                navBtns.forEach(b => {
+                    b.classList.remove('nav-active');
+                    b.classList.add('text-gray-600', 'hover:bg-gray-100', 'font-medium');
+                });
+                btn.classList.add('nav-active');
+                btn.classList.remove('text-gray-600', 'hover:bg-gray-100', 'font-medium');
+
+                sections.forEach(sec => {
+                    if (sec.id === `sec-${target}`) {
+                        sec.classList.remove('hidden');
+                    } else {
+                        sec.classList.add('hidden');
+                    }
+                });
+
+                headerTitle.textContent = sectionTitles[target] || 'Pozzuoli STR Intelligence';
+                closeSidebar();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+
+        // 1. Seasonality Line Chart (Cruscotto)
+        const ctxSeasonLine = document.getElementById('seasonalityLineChart').getContext('2d');
+        new Chart(ctxSeasonLine, {
+            type: 'line',
+            data: {
+                labels: ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'],
+                datasets: [
+                    {
+                        label: 'Occupazione Media Top Performer (%)',
+                        data: [35, 38, 46, 58, 65, 74, 82, 88, 72, 54, 36, 40],
+                        borderColor: '#0284c7',
+                        backgroundColor: 'rgba(2, 132, 199, 0.12)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.35,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#0284c7'
+                    },
+                    {
+                        label: 'Occupazione Media Mercato Amatoriale (%)',
+                        data: [20, 22, 28, 36, 42, 50, 58, 66, 48, 34, 21, 24],
+                        borderColor: '#94a3b8',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.35,
+                        pointRadius: 3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', labels: { boxWidth: 12, font: { size: 12 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y}%`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { callback: (val) => val + '%', font: { size: 11 } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 } }
+                    }
+                }
+            }
+        });
+
+        // 2. Origin Doughnut Chart (Mercato)
+        const ctxOrigin = document.getElementById('originDoughnutChart').getContext('2d');
+        new Chart(ctxOrigin, {
+            type: 'doughnut',
+            data: {
+                labels: ['Turisti Stranieri (USA, UK, DE, FR)', 'Turisti Italiani (Lombardia, Lazio, Emilia-R.)'],
+                datasets: [{
+                    data: [54, 46],
+                    backgroundColor: ['#0284c7', '#bae6fd'],
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '62%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ` ${ctx.label}: ${ctx.parsed}%`
+                        }
+                    }
+                }
+            }
+        });
+
+        // 3. Supply Bar Chart (Mercato)
+        const ctxSupply = document.getElementById('supplyBarChart').getContext('2d');
+        new Chart(ctxSupply, {
+            type: 'bar',
+            data: {
+                labels: [
+                    wrapLabel('Case Vacanza (Interi Appartamenti)'),
+                    wrapLabel('B&B e Affittacamere'),
+                    wrapLabel('Hotel (3-4 Stelle)'),
+                    wrapLabel('Campeggi & Villaggi')
+                ],
+                datasets: [{
+                    label: 'Quota Strutture Ricettive (%)',
+                    data: [56, 27.5, 13.5, 3.0],
+                    backgroundColor: ['#0284c7', '#38bdf8', '#94a3b8', '#cbd5e1'],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ` Incidenza sull'offerta: ${ctx.parsed.y}%`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 70,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { callback: (val) => val + '%', font: { size: 11 } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 } }
+                    }
+                }
+            }
+        });
+
+        // 4. OMI Real Estate Chart (Mercato)
+        const omiLabels = ['Lucrino (Costiero)', 'Anfiteatro Flavio', 'Porto / Centro', 'Solfatara / Alta', 'Media Pozzuoli', 'Monterusciello', 'Agnano'];
+        const omiSales = [3263, 2847, 2835, 2775, 2560, 1946, 1530];
+        const omiRents = [14.77, 12.90, 12.80, 12.10, 11.76, 9.20, 8.50];
+
+        const ctxOmi = document.getElementById('omiZoneBarChart').getContext('2d');
+        const omiChart = new Chart(ctxOmi, {
+            type: 'bar',
+            data: {
+                labels: omiLabels.map(l => wrapLabel(l, 16)),
+                datasets: [{
+                    label: 'Prezzo Vendita (€/m²)',
+                    data: omiSales,
+                    backgroundColor: omiLabels.map((_, i) => i === 4 ? '#f59e0b' : '#0284c7'),
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString('it-IT')} €`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f1f5f9' },
+                        ticks: { font: { size: 11 } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 } }
+                    }
+                }
+            }
+        });
+
+        const btnOmiSale = document.getElementById('btnOmiSale');
+        const btnOmiRent = document.getElementById('btnOmiRent');
+
+        btnOmiSale.addEventListener('click', () => {
+            omiChart.data.datasets[0].label = 'Prezzo Vendita (€/m²)';
+            omiChart.data.datasets[0].data = omiSales;
+            omiChart.data.datasets[0].backgroundColor = omiLabels.map((_, i) => i === 4 ? '#f59e0b' : '#0284c7');
+            omiChart.update();
+            btnOmiSale.className = 'px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-sky-600 shadow-sm';
+            btnOmiRent.className = 'px-3 py-1.5 rounded-md text-xs font-semibold text-gray-600 hover:text-gray-900';
+        });
+
+        btnOmiRent.addEventListener('click', () => {
+            omiChart.data.datasets[0].label = 'Canone Affitto (€/m²/mese)';
+            omiChart.data.datasets[0].data = omiRents;
+            omiChart.data.datasets[0].backgroundColor = omiLabels.map((_, i) => i === 4 ? '#f59e0b' : '#e11d48');
+            omiChart.update();
+            btnOmiRent.className = 'px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-rose-600 shadow-sm';
+            btnOmiSale.className = 'px-3 py-1.5 rounded-md text-xs font-semibold text-gray-600 hover:text-gray-900';
+        });
+
+        // 5. Competitive Interactive Charts (Analisi Competitiva)
+        const propertyData = {
+            affittacamere: { label: 'Affittacamere / Mono', adrWin: 70, adrSum: 98, occAvg: 34, occTop: 53, grossTop: 14750 },
+            bilocale: { label: 'Bilocale Centro/Porto', adrWin: 98, adrSum: 140, occAvg: 38, occTop: 58, grossTop: 24000 },
+            trilocale: { label: 'Trilocale Vista Mare', adrWin: 130, adrSum: 195, occAvg: 32, occTop: 49, grossTop: 31000 },
+            quadrilocale: { label: 'Quadrilocale / Villa', adrWin: 165, adrSum: 240, occAvg: 30, occTop: 47, grossTop: 36500 }
+        };
+
+        const ctxCompAdr = document.getElementById('compAdrChart').getContext('2d');
+        const compAdrChart = new Chart(ctxCompAdr, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'ADR Inverno (€/notte)', data: [], backgroundColor: '#7dd3fc', borderRadius: 6 },
+                    { label: 'ADR Estate (€/notte)', data: [], backgroundColor: '#0284c7', borderRadius: 6 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                    tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y} €` } }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { callback: (v) => v + ' €', font: { size: 11 } } },
+                    x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                }
+            }
+        });
+
+        const ctxCompOcc = document.getElementById('compOccChart').getContext('2d');
+        const compOccChart = new Chart(ctxCompOcc, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'Occupazione Media Mercato (%)', data: [], backgroundColor: '#cbd5e1', borderRadius: 6 },
+                    { label: 'Occupazione Top Performer (%)', data: [], backgroundColor: '#0284c7', borderRadius: 6 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+                    tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y}%` } }
+                },
+                scales: {
+                    y: { beginAtZero: true, max: 80, grid: { color: '#f1f5f9' }, ticks: { callback: (v) => v + '%', font: { size: 11 } } },
+                    x: { grid: { display: false }, ticks: { font: { size: 11 } } }
+                }
+            }
+        });
+
+        function updateCompetitiveView(selectedKey) {
+            const keys = selectedKey === 'all' ? Object.keys(propertyData) : [selectedKey];
+            const labels = keys.map(k => wrapLabel(propertyData[k].label, 16));
+            compAdrChart.data.labels = labels;
+            compAdrChart.data.datasets[0].data = keys.map(k => propertyData[k].adrWin);
+            compAdrChart.data.datasets[1].data = keys.map(k => propertyData[k].adrSum);
+            compAdrChart.update();
+
+            compOccChart.data.labels = labels;
+            compOccChart.data.datasets[0].data = keys.map(k => propertyData[k].occAvg);
+            compOccChart.data.datasets[1].data = keys.map(k => propertyData[k].occTop);
+            compOccChart.update();
+
+            const ref = selectedKey === 'all' ? propertyData.bilocale : propertyData[selectedKey];
+            const pmFee25 = Math.round(ref.grossTop * 0.25);
+            const titleSuffix = selectedKey === 'all' ? '(Rif. Bilocale)' : `(${ref.label})`;
+
+            document.getElementById('compSummaryCards').innerHTML = `
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <span class="text-xs font-semibold text-gray-500 uppercase">ADR Medio Annuo ${titleSuffix}</span>
+                    <div class="text-xl font-bold text-gray-900 mt-1">${Math.round((ref.adrWin + ref.adrSum) / 2)} € / notte</div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <span class="text-xs font-semibold text-gray-500 uppercase">Occupazione Top Performer</span>
+                    <div class="text-xl font-bold text-sky-600 mt-1">${ref.occTop}% <span class="text-xs font-normal text-gray-500">(vs ${ref.occAvg}% media)</span></div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <span class="text-xs font-semibold text-gray-500 uppercase">Ricavo Lordo Annuo Stimato</span>
+                    <div class="text-xl font-bold text-emerald-700 mt-1">${ref.grossTop.toLocaleString('it-IT')} €</div>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                    <span class="text-xs font-semibold text-gray-500 uppercase">Margine PM (Fee 25%)</span>
+                    <div class="text-xl font-bold text-sky-700 mt-1">${pmFee25.toLocaleString('it-IT')} € / anno</div>
+                </div>
+            `;
+        }
+
+        document.getElementById('propertyTypeSelector').addEventListener('change', (e) => {
+            updateCompetitiveView(e.target.value);
+        });
+        updateCompetitiveView('all');
+
+        // 6. Calendar Table (Domanda e Trend)
+        const calendarRows = [
+            { date: 'Aprile (30 Apr) & Luglio', event: 'Pozzuoli Jazz Festival (Spring & Summer Edition)', target: 'Turisti esteri & appassionati musica alto-spendenti', action: 'Markup +35% su bilocali/trilocali vicino siti archeologici', cat: 'cultura' },
+            { date: '25 Aprile – 1° Maggio – 2 Giugno', event: 'Ponti Primaverili & Rione Terra Sotterraneo', target: 'Coppie e famiglie italiane ed europee', action: 'Minimum stay 3 notti; tariffe fascia alta (+40%)', cat: 'cultura' },
+            { date: '1° Luglio – 31 Agosto (Weekend)', event: 'Hub Traghetti Procida & Ischia (Porto Pozzuoli)', target: 'Viaggiatori leisure in transito verso le isole', action: 'Ottimizzazione Booking.com per soggiorni brevi 1–2 notti', cat: 'picco' },
+            { date: '14 – 16 Agosto (Ferragosto)', event: 'Festa dell\'Assunta & Storico "Pennone a Mare"', target: 'Turisti balneari, emigrati di ritorno e visitatori', action: 'Picco tariffario massimo annuale (+60%) e soggiorno min. 4 notti', cat: 'picco' },
+            { date: 'Ultima decade di Settembre (23–28 Set)', event: 'Malazè – Festival Enoarcheogastronomico', target: 'Enogastronomi, coppie culturali e stampa', action: 'Pacchetti degustazione Falanghina + markup tariffario +30%', cat: 'cultura' },
+            { date: 'Novembre – Marzo (Ven/Sab sera)', event: 'Aperture Serali Terme Stufe di Nerone & Winter Jazz', target: 'Coppie benessere (Lazio/Campania) e trasfertisti', action: 'Promozione weekend wellness + contratti transitori 1–4 mesi', cat: 'inverno' }
+        ];
+
+        function renderCalendar(filter = 'all') {
+            const filtered = filter === 'all' ? calendarRows : calendarRows.filter(r => r.cat === filter);
+            document.getElementById('calendarTableBody').innerHTML = filtered.map(r => `
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="py-3.5 px-6 font-semibold text-sky-700 whitespace-nowrap">${r.date}</td>
+                    <td class="py-3.5 px-6 font-medium text-gray-900">${r.event}</td>
+                    <td class="py-3.5 px-6 text-gray-600">${r.target}</td>
+                    <td class="py-3.5 px-6"><span class="inline-block px-2.5 py-1 rounded-md text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-100">${r.action}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        document.querySelectorAll('.cal-filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.cal-filter-btn').forEach(b => {
+                    b.className = 'cal-filter-btn px-3 py-1 rounded-md text-xs font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200';
+                });
+                btn.className = 'cal-filter-btn px-3 py-1 rounded-md text-xs font-semibold bg-sky-600 text-white';
+                renderCalendar(btn.dataset.filter);
+            });
+        });
+        renderCalendar('all');
+
+        // 7. Action Plan Interactive Checklist (Piano d'Azione)
+        const actionPlanItems = [
+            {
+                step: 'Mossa 1',
+                title: 'Avvio tramite Property Management Geotargetizzato (Rischio Zero)',
+                desc: 'Acquisisci i primi 3–5 immobili in gestione conto terzi (fee 25%) tra Pozzuoli Centro, Anfiteatro e Lucrino. Intercetta i proprietari di seconde case sfitte bloccati dal vendere a causa del bradisismo, proponendo presidio manutentivo costante e rendita turistica.'
+            },
+            {
+                step: 'Mossa 2',
+                title: 'Due Diligence Strutturale & Sfruttamento Incentivi D.L. 140/2023',
+                desc: 'Prima di qualsiasi acquisizione o mandato, esegui una verifica tecnica dell\'integrità strutturale dell\'edificio. In caso di acquisto diretto (Buy-to-Let), negozia sconti del 10%–20% e sfrutta i contributi statali fino a 30.000 € a fondo perduto per il ripristino di danni leggeri.'
+            },
+            {
+                step: 'Mossa 3',
+                title: 'Automazione Domotica & Compliance Burocratica (CUSR, CIN, Tassa Soggiorno)',
+                desc: 'Installa serrature smart per self check-in h24 e Wi-Fi ad alta velocità. Regolarizza SCIA al SUAP (se oltre 4 immobili), esponi i codici CUSR e CIN su ogni annuncio per evitare sanzioni fino a 2.000 € e imposta la riscossione automatica dell\'Imposta di Soggiorno (5,00 €/notte).'
+            },
+            {
+                step: 'Mossa 4',
+                title: 'Posizionamento Esperienziale & Convenzioni Locali "Campi Flegrei"',
+                desc: 'Differenzia gli immobili con guide digitali multilingua, protocollo informativo rassicurante sul bradisismo e convenzioni dirette con le Terme Stufe di Nerone, tour del Parco Sommerso di Baia e cantine locali per portare il rating recensioni sopra 9,0/10.'
+            },
+            {
+                step: 'Mossa 5',
+                title: 'Dynamic Pricing Event-Driven & Switch Stagionale Invernale',
+                desc: 'Utilizza software di pricing dinamico (es. PriceLabs) per applicare rincari automatici (+40%/+60%) su Ferragosto/Pennone a Mare, Malazè e Pozzuoli Jazz. Da novembre a marzo, sposta gli appartamenti sfitti su Idealista/Spotahome per locazioni transitorie di 1–4 mesi.'
+            }
+        ];
+
+        const completedMoves = new Set();
+
+        function renderActionSteps() {
+            const container = document.getElementById('actionStepsContainer');
+            container.innerHTML = actionPlanItems.map((item, idx) => {
+                const done = completedMoves.has(idx);
+                return `
+                    <div class="bg-white rounded-xl p-5 border ${done ? 'border-emerald-300 bg-emerald-50/30' : 'border-gray-200'} shadow-sm flex items-start space-x-4 transition-colors">
+                        <button data-idx="${idx}" class="move-checkbox mt-0.5 w-6 h-6 rounded-md border ${done ? 'bg-sky-600 border-sky-600 text-white' : 'bg-white border-gray-300 text-transparent'} flex items-center justify-center text-xs font-bold shrink-0">
+                            &#10003;
+                        </button>
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-sky-600">${item.step}</span>
+                            <h4 class="text-base font-bold text-gray-900 mt-0.5 ${done ? 'line-through text-gray-500' : ''}">${item.title}</h4>
+                            <p class="text-xs sm:text-sm text-gray-600 mt-1.5 leading-relaxed">${item.desc}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('actionProgressText').textContent = `${completedMoves.size} / ${actionPlanItems.length} Completate`;
+
+            document.querySelectorAll('.move-checkbox').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const i = parseInt(btn.dataset.idx);
+                    if (completedMoves.has(i)) completedMoves.delete(i);
+                    else completedMoves.add(i);
+                    renderActionSteps();
+                });
+            });
+        }
+        renderActionSteps();
+    </script>
+</body>
+</html>
